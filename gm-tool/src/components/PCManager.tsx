@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { CORE_WEAPONS, CORE_ARMOR_PRESETS } from '@/lib/compendium';
+import { getWoundState } from '@/lib/damage';
 import type { PC, Participant, Weapon } from '@/types';
 
 interface PCManagerProps {
@@ -146,7 +147,7 @@ export function PCManager({ onAddToEncounter, onAddPartyToEncounter }: PCManager
       hp: pc.hp,
       maxHp: pc.maxHp,
       seriouslyWoundedThreshold: Math.ceil(pc.maxHp / 2),
-      woundState: 'not-wounded',
+      woundState: getWoundState(pc.hp, pc.maxHp),
       dead: pc.hp <= 0,
       isPC: true,
       armor: {

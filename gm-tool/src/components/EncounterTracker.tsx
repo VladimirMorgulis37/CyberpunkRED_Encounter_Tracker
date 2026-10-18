@@ -88,6 +88,7 @@ export function EncounterTracker({
   encounter,
   activeTurnParticipant,
   savedEncounters,
+  onAddParticipant,
   onUpdateParticipant,
   onRemoveParticipant,
   onRollAllNPCs,
@@ -2378,8 +2379,14 @@ export function EncounterTracker({
                     return;
                   }
                   const isPC = quickAddAffiliation === 'player';
-                  const p: Participant = {
-                    id: crypto.randomUUID(),
+                  const combatNum = quickAddRef + 4;
+                  let initRoll: number | undefined;
+                  let initTotal: number | undefined;
+                  if (encounter.active && !isPC) {
+                    initRoll = Math.floor(Math.random() * 10) + 1;
+                    initTotal = initRoll + combatNum;
+                  }
+                  const p: Omit<Participant, 'id' | 'woundState' | 'dead'> = {
                     name: quickAddName.trim(),
                     affiliation: quickAddAffiliation,
                     ref: quickAddRef,
@@ -2390,11 +2397,11 @@ export function EncounterTracker({
                     hp: quickAddHP,
                     maxHp: quickAddHP,
                     seriouslyWoundedThreshold: Math.ceil(quickAddHP / 2),
-                    woundState: 'not-wounded',
-                    dead: false,
+                    rolled: initRoll,
+                    total: initTotal,
                     isPC,
                     isGoon: !isPC,
-                    combatNumber: quickAddRef + 4,
+                    combatNumber: combatNum,
                     armor: {
                       head: quickAddSP,
                       body: quickAddSP,
@@ -2404,11 +2411,16 @@ export function EncounterTracker({
                     weapons: [{
                       _id: 'w-default',
                       name: 'Heavy Pistol',
-                      system: { damage: '3d6', weaponSkill: 'Handgun' }
+                      system: { 
+                        damage: '3d6', 
+                        weaponSkill: 'Handgun',
+                        weaponType: 'pistol'
+                      }
                     }]
                   };
-                  onUpdateParticipant(p.id, p);
-                  toast.success(`Added ${p.name} to encounter!`);
+                  if (onAddParticipant) {
+                    onAddParticipant(p);
+                  }
                   setQuickAddName('');
                   setShowQuickAdd(false);
                 }}

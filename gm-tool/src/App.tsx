@@ -111,16 +111,25 @@ function App() {
   }, [encounter, orderedParticipants]);
   
   // Actions
-  const addParticipant = useCallback((participant: Omit<Participant, 'id' | 'woundState' | 'dead'>) => {
+  const addParticipant = useCallback((participant: Omit<Participant, 'id' | 'woundState' | 'dead'> & { id?: string; woundState?: WoundState; dead?: boolean }) => {
+    let rolled = participant.rolled;
+    let total = participant.total;
+    if (encounter.active && !participant.isPC && total === undefined) {
+      const bonus = participant.isGoon ? (participant.combatNumber ?? 11) : (participant.ref + (participant.initiativeSkill || 0));
+      rolled = Math.floor(Math.random() * 10) + 1;
+      total = rolled + bonus;
+    }
     const newParticipant: Participant = {
       ...participant,
-      id: crypto.randomUUID(),
-      woundState: getWoundState(participant.hp, participant.maxHp),
-      dead: participant.hp <= 0
+      id: participant.id || crypto.randomUUID(),
+      woundState: participant.woundState || getWoundState(participant.hp, participant.maxHp),
+      dead: participant.dead !== undefined ? participant.dead : participant.hp <= 0,
+      rolled,
+      total
     };
     setParticipants(prev => [...prev, newParticipant]);
     toast.success(`${participant.name} added to encounter`);
-  }, [setParticipants]);
+  }, [encounter.active, setParticipants]);
   
   const updateParticipant = useCallback((id: string, updates: Partial<Participant>) => {
     setParticipants(prev => prev.map(p => {
@@ -545,9 +554,11 @@ function App() {
                   }}
                   onAddPartyToEncounter={(party) => {
                     setParticipants(prev => {
+                      const partyMap = new Map(party.map(p => [p.id, p]));
+                      const updated = prev.map(p => partyMap.has(p.id) ? { ...p, ...partyMap.get(p.id) } : p);
                       const existingIds = new Set(prev.map(p => p.id));
                       const newOnly = party.filter(p => !existingIds.has(p.id));
-                      return [...prev, ...newOnly];
+                      return [...updated, ...newOnly];
                     });
                     setActiveTab('encounter');
                   }}
