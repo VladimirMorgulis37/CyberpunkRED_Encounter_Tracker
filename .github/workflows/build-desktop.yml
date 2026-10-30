@@ -2,11 +2,11 @@ name: Build Desktop App
 
 on:
   push:
-    branches: [ V2 ]
+    branches: [ V3 ]
     paths:
       - 'gm-tool/package.json'
   pull_request:
-    branches: [ V2 ]
+    branches: [ V3 ]
     paths:
       - 'gm-tool/package.json'
 

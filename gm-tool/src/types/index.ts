@@ -352,3 +352,5 @@ export interface AppSettings {
   soundEnabled: boolean;
   autoSave: boolean;
 }
+
+export * from './chase';

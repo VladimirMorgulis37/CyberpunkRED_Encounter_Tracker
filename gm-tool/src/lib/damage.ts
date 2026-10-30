@@ -29,14 +29,18 @@ export function getCoverHP(coverType: CoverType): number {
 /**
  * Calculate damage reduction based on damage type
  */
+/**
+ * Calculate damage reduction based on damage type
+ * Per RAW (p. 344), only Melee / Half-Armor halves armor SP.
+ * Armor-Piercing (AP) ammo does NOT halve SP; it ablates by 2 SP on penetrating hit.
+ */
 export function calculateArmorReduction(armorSP: number, damageType: DamageType): number {
   switch (damageType) {
-    case 'armor-piercing':
-      return Math.floor(armorSP / 2);
     case 'half-armor':
       return Math.floor(armorSP / 2);
     case 'ignore-armor':
       return 0;
+    case 'armor-piercing':
     case 'normal':
     default:
       return armorSP;
@@ -84,7 +88,7 @@ export function calculateDamage(
     coverDamage = coverAbsorb;
     
     // Overflow damage passes through
-    remainingDamage = Math.max(0, afterCoverSP - coverHP);
+    remainingDamage = Math.max(0, afterCoverSP - coverAbsorb);
   }
   
   // Step 2: Apply Armor SP for hit location
@@ -134,22 +138,33 @@ export function calculateDamage(
 }
 
 /**
- * Get wound state based on HP ratio
+ * Get wound state per Cyberpunk RED RAW (Core p. 220)
+ * - Lightly Wounded: HP < Max HP, but > 1/2 Max HP (no penalty)
+ * - Seriously Wounded: HP <= 1/2 Max HP, but > 0 (-2 to actions & MOVE)
+ * - Mortally Wounded / Dead: HP <= 0 (requires Death Saves)
  */
 export function getWoundState(hp: number, maxHp: number): 'not-wounded' | 'lightly-wounded' | 'seriously-wounded' | 'mortally-wounded' | 'dead' {
   if (hp <= 0) return 'dead';
-  const ratio = hp / maxHp;
-  if (ratio <= 0.25) return 'mortally-wounded';
-  if (ratio <= 0.5) return 'seriously-wounded';
-  if (ratio <= 0.75) return 'lightly-wounded';
+  const seriouslyWoundedThreshold = Math.ceil(maxHp / 2);
+  if (hp <= seriouslyWoundedThreshold) return 'seriously-wounded';
+  if (hp < maxHp) return 'lightly-wounded';
   return 'not-wounded';
 }
 
 /**
- * Check if a participant can act based on wound state
+ * Check if a participant can act based on wound state.
+ * In RAW, Seriously Wounded combatants can still act (with -2 penalty).
+ * Only dead or downed mortally-wounded participants cannot act normally.
  */
 export function canAct(woundState: string): boolean {
-  return woundState !== 'seriously-wounded' && woundState !== 'dead' && woundState !== 'mortally-wounded';
+  return woundState !== 'dead' && woundState !== 'mortally-wounded';
+}
+
+/**
+ * Standardized check if a participant is active in combat
+ */
+export function isCombatantActive(participant: { woundState: string; dead?: boolean; hp: number }): boolean {
+  return !participant.dead && participant.hp > 0 && canAct(participant.woundState);
 }
 
 /**

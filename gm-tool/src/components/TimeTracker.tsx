@@ -111,25 +111,25 @@ export function TimeTracker() {
         let newMonth = prev.month;
         let newYear = prev.year;
         
-        if (newMinute >= 60) {
-          newMinute = 0;
+        while (newMinute >= 60) {
+          newMinute -= 60;
           newHour++;
         }
         
-        if (newHour >= 24) {
-          newHour = 0;
+        while (newHour >= 24) {
+          newHour -= 24;
           newDay++;
         }
         
-        const daysInMonth = new Date(newYear, newMonth, 0).getDate();
-        if (newDay > daysInMonth) {
-          newDay = 1;
+        let daysInMonth = new Date(newYear, newMonth, 0).getDate();
+        while (newDay > daysInMonth) {
+          newDay -= daysInMonth;
           newMonth++;
-        }
-        
-        if (newMonth > 12) {
-          newMonth = 1;
-          newYear++;
+          if (newMonth > 12) {
+            newMonth -= 12;
+            newYear++;
+          }
+          daysInMonth = new Date(newYear, newMonth, 0).getDate();
         }
         
         return {

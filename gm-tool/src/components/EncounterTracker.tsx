@@ -18,7 +18,7 @@ import {
 } from '@/lib/combatEngine';
 import { generateRoundNarrative } from '@/lib/narrativeEngine';
 import type { NarrativeTone } from '@/lib/narrativeEngine';
-import { getWoundState, canAct } from '@/lib/damage';
+import { getWoundState, isCombatantActive } from '@/lib/damage';
 import { 
   WeaponQuickBadge, 
   RangeDVReferenceModal 
@@ -304,7 +304,7 @@ export function EncounterTracker({
 
   // Execute all consecutive automated NPCs following each other in one go
   const executeConsecutiveNPCTurns = (startIndex: number, startRound: number) => {
-    const acting = orderedParticipants.filter(p => canAct(p.woundState) && !p.dead && p.hp > 0);
+    const acting = orderedParticipants.filter(isCombatantActive);
     if (acting.length === 0) return;
 
     let currentIndex = startIndex % acting.length;
@@ -325,9 +325,7 @@ export function EncounterTracker({
         currentParticipant.affiliation !== 'player' && 
         !currentParticipant.manualControl && 
         !(currentParticipant.isCustomNPC && currentParticipant.affiliation === 'friendly_npc') && 
-        currentParticipant.hp > 0 && 
-        !currentParticipant.dead && 
-        canAct(currentParticipant.woundState);
+        isCombatantActive(currentParticipant);
 
       if (!isAutomatedNPC) {
         // Reached a Player Character or GM Manual Control Ally! Stop here.
@@ -482,9 +480,7 @@ export function EncounterTracker({
       activeTurnParticipant.affiliation !== 'player' && 
       !activeTurnParticipant.manualControl && 
       !activeTurnParticipant.isCustomNPC && 
-      activeTurnParticipant.hp > 0 && 
-      !activeTurnParticipant.dead && 
-      canAct(activeTurnParticipant.woundState);
+      isCombatantActive(activeTurnParticipant);
 
     if (isAutomatedNPC) {
       const timer = setTimeout(() => {
@@ -579,7 +575,13 @@ export function EncounterTracker({
         timestamp: new Date().toLocaleTimeString()
       };
       setCombatActions(prev => [action, ...prev]);
-      setPendingPCAttacks(prev => prev.slice(1));
+      setPendingPCAttacks(prev => {
+        const nextQueue = prev.slice(1);
+        if (nextQueue.length === 0) {
+          onNextTurn();
+        }
+        return nextQueue;
+      });
       return;
     }
 
@@ -660,7 +662,13 @@ export function EncounterTracker({
 
     setCombatActions(prev => [action, ...prev]);
     toast.success(`Damage applied to ${item.pcDefender.name}: -${hpDamage} HP (Armor ablated to ${spAfter})`);
-    setPendingPCAttacks(prev => prev.slice(1));
+    setPendingPCAttacks(prev => {
+      const nextQueue = prev.slice(1);
+      if (nextQueue.length === 0) {
+        onNextTurn();
+      }
+      return nextQueue;
+    });
   };
 
   // Helper to handle GM applying player damage to an enemy/defender

@@ -447,7 +447,7 @@ export function resolveAttack({
         ...currentCover,
         hp: Math.max(0, currentCover.hp - absorbed)
       };
-      remainingDamage = Math.max(0, afterSP - currentCover.hp);
+      remainingDamage = Math.max(0, afterSP - absorbed);
     }
 
     // 5. Armor SP absorption
@@ -657,7 +657,7 @@ export function resolveAttackAgainstDV({
         ...currentCover,
         hp: Math.max(0, currentCover.hp - absorbed)
       };
-      remainingDamage = Math.max(0, afterSP - currentCover.hp);
+      remainingDamage = Math.max(0, afterSP - absorbed);
     }
 
     // Armor SP absorption

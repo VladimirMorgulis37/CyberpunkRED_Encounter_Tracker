@@ -2,14 +2,14 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { 
   Swords, Users, Skull, Clock, ShoppingCart, Settings, 
   Zap, UserPlus, Dices, ChevronRight, Crosshair,
-  Menu, X, Network
+  Menu, X, Network, Gauge
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { calculateDamage, getWoundState, canAct } from '@/lib/damage';
+import { calculateDamage, getWoundState, isCombatantActive } from '@/lib/damage';
 import type { 
   Participant, EncounterState, SavedEncounter, 
   DamageType, CritMode, ThemeMode, ColorPalette,
-  TarotDeckState
+  TarotDeckState, WoundState
 } from '@/types';
 
 // Components
@@ -27,10 +27,11 @@ import { SettingsManager } from '@/components/SettingsManager';
 import { DamageDialog } from '@/components/DamageDialog';
 import { FloatingCombatControls } from '@/components/FloatingCombatControls';
 import { NetrunningArchitecture } from '@/components/NetrunningArchitecture';
+import { ChaseTracker } from '@/components/ChaseTracker';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
+import { toast, Toaster } from 'sonner';
 
-type TabType = 'encounter' | 'pcs' | 'npc' | 'encounter-gen' | 'damage' | 'crit' | 'tarot' | 'time' | 'shop' | 'netrunning' | 'settings';
+type TabType = 'encounter' | 'chase' | 'pcs' | 'npc' | 'encounter-gen' | 'damage' | 'crit' | 'tarot' | 'time' | 'shop' | 'netrunning' | 'settings';
 
 function App() {
   // Theme state
@@ -105,7 +106,7 @@ function App() {
   
   const activeTurnParticipant = useMemo(() => {
     if (!encounter.active || orderedParticipants.length === 0) return null;
-    const acting = orderedParticipants.filter(p => canAct(p.woundState));
+    const acting = orderedParticipants.filter(isCombatantActive);
     if (acting.length === 0) return null;
     return acting[encounter.turnIndex % acting.length] || null;
   }, [encounter, orderedParticipants]);
@@ -225,7 +226,7 @@ function App() {
   const nextTurn = useCallback((targetTurnIndex?: number, targetRound?: number) => {
     if (!encounter.active) return;
     setEncounter(prev => {
-      const acting = orderedParticipants.filter(p => canAct(p.woundState));
+      const acting = orderedParticipants.filter(isCombatantActive);
       if (typeof targetTurnIndex === 'number') {
         const newRound = typeof targetRound === 'number' ? targetRound : prev.round;
         const wrappedIndex = targetTurnIndex % Math.max(acting.length, 1);
@@ -348,6 +349,7 @@ function App() {
   // Navigation items
   const navItems: { id: TabType; label: string; icon: React.ElementType }[] = [
     { id: 'encounter', label: 'Encounter', icon: Swords },
+    { id: 'chase', label: 'Chase / Погоня', icon: Gauge },
     { id: 'pcs', label: 'PCs', icon: Users },
     { id: 'npc', label: 'NPCs', icon: UserPlus },
     { id: 'encounter-gen', label: 'Generator', icon: Zap },
@@ -488,6 +490,13 @@ function App() {
                   onResetCombatState={resetCombatState}
                 />
               )}
+
+              {activeTab === 'chase' && (
+                <ChaseTracker
+                  encounterParticipants={participants}
+                  onSwitchToTacticalCombat={() => setActiveTab('encounter')}
+                />
+              )}
               
               {activeTab === 'damage' && (
                 <DamageCalculator />
@@ -605,6 +614,9 @@ function App() {
           clearRolls();
         }}
       />
+      
+      {/* Global Notifications */}
+      <Toaster position="top-right" richColors theme={themeMode === 'light' ? 'light' : 'dark'} />
     </div>
   );
 }

@@ -4,7 +4,7 @@ import {
   Skull, UserCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { canAct } from '@/lib/damage';
+import { isCombatantActive } from '@/lib/damage';
 import type { EncounterState, Participant } from '@/types';
 
 interface FloatingCombatControlsProps {
@@ -32,8 +32,8 @@ export function FloatingCombatControls({
 
   // Filter acting participants ordered by initiative
   const acting = participants
-    .filter(p => canAct(p.woundState) && !p.dead && p.hp > 0 && p.total !== undefined)
-    .sort((a, b) => (b.total || 0) - (a.total || 0));
+    .filter(isCombatantActive)
+    .sort((a, b) => (b.total ?? 0) - (a.total ?? 0));
 
   const activeIdx = activeTurnParticipant ? acting.findIndex(p => p.id === activeTurnParticipant.id) : -1;
   const onDeckParticipant = acting.length > 1 && activeIdx !== -1

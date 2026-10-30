@@ -20,8 +20,8 @@ export function DamageCalculator() {
   
   const damageTypes: { value: DamageType; label: string; description: string }[] = [
     { value: 'normal', label: 'Normal', description: 'Standard damage, armor ablates by 1 SP' },
-    { value: 'armor-piercing', label: 'Armor-Piercing', description: 'Half armor SP, ablates by 2 SP' },
-    { value: 'half-armor', label: 'Half Armor', description: 'Melee only, half armor SP' },
+    { value: 'armor-piercing', label: 'Armor-Piercing', description: 'Full armor SP, ablates by 2 SP on penetration' },
+    { value: 'half-armor', label: 'Half Armor (Melee)', description: 'Melee/Brawling attacks halve effective armor SP' },
     { value: 'ignore-armor', label: 'Ignore Armor', description: 'Ignores all armor SP' }
   ];
   
